@@ -1,0 +1,15 @@
+---
+description: 
+globs: schema.ts,server/src/routes/*.ts
+alwaysApply: false
+---
+
+# Schema Changes
+
+If you make changes to [index.ts](mdc:server/src/routes/index.ts) or [schema.ts](mdc:server/src/routes/schema.ts) route endpoints, route endoint schemas, or [schema.ts](mdc:server/src/db/schema.ts) db schemas, we will need to regenerate code.
+
+The order of operations looks like this:
+
+1. Make changes to the schemas or endpoints.
+2. `cd client && just gen` -- this will generate a ton of client code for react-query hooks and types.
+3. If the schemas fundamentally changed any of the existing in-use endpoints, we'll need to fix the react-query hooks usage to match in client/src/routes.

@@ -1,0 +1,74 @@
+name: Deploy on Tag (SSH)
+run-name: Deploy ${{ github.ref_name }}
+
+on:
+  push:
+    tags:
+      - "v*" # run when pushing version tags like v1.2.3
+  workflow_dispatch: {}
+
+# Avoid overlapping deploys
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to server via SSH
+    runs-on: ubuntu-latest
+    environment: linode
+    permissions:
+      contents: read
+    env:
+      # Configure these as repository Variables (Settings → Variables → Actions)
+      DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}          # e.g. prod.example.com
+      DEPLOY_USER: ${{ vars.DEPLOY_USER }}          # e.g. deploy
+      DEPLOY_PORT: ${{ vars.DEPLOY_PORT }}          # optional, default 22
+      DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}          # e.g. /srv/madi
+      COMPOSE_FILE: ${{ vars.DOCKER_COMPOSE_FILE }} # optional, default docker-compose.prod.yml
+      REPO_SSH_URL: git@github.com:${{ github.repository }}.git
+      TAG_NAME: ${{ github.ref_name }}
+    steps:
+      - name: Validate required variables
+        run: |
+          set -euo pipefail
+          : "${DEPLOY_HOST:?Set repository variable DEPLOY_HOST}"
+          : "${DEPLOY_USER:?Set repository variable DEPLOY_USER}"
+          : "${DEPLOY_PATH:?Set repository variable DEPLOY_PATH}"
+
+      - name: Set up SSH key
+        run: |
+          set -euo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # Add host key for strict host key checking
+          ssh-keyscan -p "${DEPLOY_PORT:-22}" "${DEPLOY_HOST}" >> ~/.ssh/known_hosts
+
+      - name: Fetch tag on server and deploy
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "${DEPLOY_PORT:-22}" -o StrictHostKeyChecking=yes "${DEPLOY_USER}@${DEPLOY_HOST}" bash -se << EOF
+          set -euo pipefail
+          echo "Deploy path: ${DEPLOY_PATH}"
+          echo "Tag: ${TAG_NAME}"
+
+          # Expect the repository to already be cloned at DEPLOY_PATH
+          # Provide a clear error if missing, with the exact clone command to run.
+          if [ ! -d "${DEPLOY_PATH}/.git" ]; then
+            echo "ERROR: Repository not found at ${DEPLOY_PATH}." >&2
+            echo "Please run on the server:" >&2
+            echo "  git clone ${REPO_SSH_URL} ${DEPLOY_PATH##*/}" >&2
+            exit 1
+          fi
+
+          cd "${DEPLOY_PATH}"
+
+          echo "Fetching tags..."
+          git fetch --tags origin
+
+          echo "Checking out tag ${TAG_NAME}..."
+          git -c advice.detachedHead=false checkout -f "tags/${TAG_NAME}"
+
+          echo "Running docker compose up..."
+          docker compose -f "${COMPOSE_FILE:-docker-compose.prod.yml}" up -d --build
+          EOF

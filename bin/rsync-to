@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Sync repo to a remote host with sensible excludes.
+#
+# Defaults mirror: rsync -av ./ "<host>:app/"
+#
+# Usage:
+#   bin/rsync-to <host> [remote_dir] [-- <extra rsync args>]
+#
+# Env flags (set to any value to enable):
+#   MADI_DRY_RUN     -> adds --dry-run
+#   MADI_DELETE      -> adds --delete (with protect: server/storage/)
+#   MADI_REMOTE_DIR  -> default remote dir when not provided (default: app)
+#
+# Examples:
+#   bin/rsync-to madi                     # -> madi:app/
+#   bin/rsync-to user@madi /srv/app       # -> user@madi:/srv/app/
+#   MADI_DRY_RUN=1 bin/rsync-to madi      # dry run
+#   MADI_DELETE=1 bin/rsync-to madi       # delete extraneous on remote
+#   bin/rsync-to madi -- --chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r
+
+# Positional host and optional dir
+if [[ $# -lt 1 ]]; then
+  echo "Usage: $0 <host> [remote_dir] [-- <extra rsync args>]" >&2
+  exit 2
+fi
+
+REMOTE_HOST="$1"; shift
+
+# Optional remote dir if next token is not a flag marker or option
+REMOTE_DIR="${MADI_REMOTE_DIR:-app}"
+if [[ $# -ge 1 && "$1" != "--" && "${1#-}" == "$1" ]]; then
+  REMOTE_DIR="$1"
+  shift
+fi
+
+# Skip optional "--" separator
+if [[ ${1:-} == "--" ]]; then
+  shift
+fi
+
+# Ensure remote dir ends with a single trailing slash (rsync dir semantics)
+REMOTE_DIR=${REMOTE_DIR%/}
+REMOTE_DIR+="/"
+
+rsync_args=(rsync -av --progress)
+
+if [[ -n "${MADI_DRY_RUN:-}" ]]; then
+  rsync_args+=(--dry-run)
+fi
+if [[ -n "${MADI_DELETE:-}" ]]; then
+  rsync_args+=(--delete)
+  # Belt-and-suspenders: never delete prod storage directory
+  rsync_args+=("--filter=P server/storage/")
+fi
+
+# Built-in includes/excludes (safe for prod)
+# Ensure defaults are shipped but live .env is preserved on remote
+rsync_args+=(--include ".env.defaults")
+
+ # Built-in excludes
+BUILTIN_EXCLUDES=(
+  ".git/"
+  ".github/"
+  ".cursor/"
+  ".vscode/"
+  ".DS_Store"
+  ".env"
+  "node_modules/"
+  "storage/"
+)
+
+for pat in "${BUILTIN_EXCLUDES[@]}"; do
+  rsync_args+=(--exclude "$pat")
+done
+
+# Pass through any extra rsync args verbatim
+if [[ $# -gt 0 ]]; then
+  rsync_args+=("$@")
+fi
+
+REMOTE_TARGET="${REMOTE_HOST}:${REMOTE_DIR}"
+
+# Append source and destination as final args
+rsync_args+=("./" "${REMOTE_TARGET}")
+
+echo "Sync: ./ -> ${REMOTE_TARGET}" >&2
+echo "Command: ${rsync_args[*]}" >&2
+
+"${rsync_args[@]}"
