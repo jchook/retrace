@@ -1,0 +1,71 @@
+services:
+
+  api:
+    build:
+      context: .
+      target: server
+    command: ["api"]
+    env_file:
+      - ".env.defaults"
+      - ".env"
+    ports:
+      - "3000:3000"
+    init: true
+    depends_on:
+      - db
+    restart: unless-stopped
+    volumes:
+      - ./server/storage/documents:/mnt/documents:rw
+      - ./server/storage/artifacts:/mnt/artifacts:rw
+
+
+  db:
+    image: 'postgres:17-alpine'
+    shm_size: 128mb
+    env_file:
+      - ".env.defaults"
+      - ".env"
+    healthcheck:
+      test: pg_isready -U madi -h 127.0.0.1
+      interval: 5s
+    restart: unless-stopped
+    volumes:
+      - "pg_data:/var/lib/postgresql/data:rw"
+
+  pgweb:
+    image: sosedoff/pgweb
+    ports:
+      - "127.0.0.1:8081:8081"
+    environment:
+      PGWEB_DATABASE_URL: "postgres://madi:madi@db:5432/madi?sslmode=disable"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  caddy:
+    build:
+      context: .
+      target: client
+    depends_on:
+      - api
+    ports:
+      - "443:443"
+    env_file:
+      - ".env.defaults"
+      - ".env"
+    restart: unless-stopped
+    volumes:
+      - ./server/etc/caddy:/etc/caddy
+      - caddy_data:/data
+      - caddy_config:/config
+
+  redis:
+    image: 'redis:7-alpine'
+    restart: unless-stopped
+
+
+volumes:
+  pg_data:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,5 @@
+#!/bin/sh
+# Must be called from the client directory
+# First update the openapi.json file
+../server/bin/openapi-spec > openapi.json
+kubb

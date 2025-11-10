@@ -1,0 +1,6 @@
+gen:
+  ./node_modules/.bin/kubb
+
+up:
+  bun dev
+

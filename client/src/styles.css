@@ -1,0 +1,33 @@
+html {
+  color-scheme: light dark;
+}
+
+.filepond--credits {
+  display: none;
+}
+
+.media-print-only {
+  display: none;
+}
+
+@media print {
+  .media-print-only {
+    display: block;
+  }
+  .media-print-hide,
+  .mantine-AppShell-header,
+  .mantine-AppShell-sidebar,
+  .TanStackRouterDevtools,
+  .mantine-Breadcrumbs-root {
+    display: none;
+  }
+  .media-print-squash,
+  .mantine-AppShell-main {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    box-shadow: none;
+    background: none;
+    overflow: visible;
+  }
+}

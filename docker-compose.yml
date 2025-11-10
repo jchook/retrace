@@ -1,0 +1,84 @@
+services:
+
+  api:
+    build:
+      context: .
+      target: app
+    command: "api"
+    entrypoint: "/app/server/bin/docker-entrypoint.sh"
+    working_dir: "/app/server"
+    env_file:
+      - ".env.defaults"
+      - ".env"
+    ports:
+      - "127.0.0.1:3000:3000"
+    init: true
+    depends_on:
+      - db
+    volumes:
+      - '.:/app'
+      - ./server/storage/documents:/mnt/documents:rw
+      - ./server/storage/artifacts:/mnt/artifacts:rw
+
+
+  db:
+    image: 'postgres:17-alpine'
+    shm_size: 128mb
+    environment:
+      POSTGRES_USER: madi
+      POSTGRES_PASSWORD: madi
+    healthcheck:
+      test: pg_isready -U madi -h 127.0.0.1
+      interval: 5s
+    volumes:
+      - "pg_data:/var/lib/postgresql/data:rw"
+
+  pgweb:
+    image: sosedoff/pgweb
+    ports:
+      - "127.0.0.1:8081:8081"
+    environment:
+      PGWEB_DATABASE_URL: "postgres://madi:madi@db:5432/madi?sslmode=disable"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  caddy:
+    image: "caddy:2.10.0-alpine"
+    depends_on:
+      - api
+    ports:
+      - "443:443"
+    env_file:
+      - .env
+    volumes:
+      - ./server/etc/caddy:/etc/caddy
+      - ./client/dist:/app/client/dist
+      - caddy_data:/data
+      - caddy_config:/config
+
+  redis:
+    image: 'redis:7-alpine'
+
+
+  client:
+    build:
+      context: .
+      target: app
+    command: ["sh", "-c", "bun install && bun run dev"]
+    working_dir: "/app/client"
+    env_file:
+      - ".env.defaults"
+      - ".env"
+    ports:
+      - "127.0.0.1:9000:9000"
+    init: true
+    volumes:
+      - '.:/app'
+    depends_on:
+      - api
+
+volumes:
+  pg_data:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,57 @@
+{
+  servers {
+    protocols h1 h2
+  }
+}
+
+(app) {
+	handle_path /v1/* {
+		reverse_proxy api:3000
+	}
+
+	# Serve your static site
+  handle {
+    root * /app/client/dist
+    encode gzip zstd
+
+    @static {
+      path_regexp static \.(?:jpg|jpeg|gif|png|ico|cur|gz|svg|svgz|mp4|mp3|ogg|ogv|webm|htc|woff2|woff|css|js)$
+    }
+
+		try_files {path} /index.html
+		file_server
+
+    header @static Cache-Control "public, max-age=31536000"
+    header /index.html Cache-Control "public, max-age=0, must-revalidate"
+  }
+
+  header {
+    X-Frame-Options "DENY"
+    X-Content-Type-Options "nosniff"
+    X-XSS-Protection "1; mode=block"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    Permissions-Policy "geolocation=(), microphone=(), camera=()"
+    Cross-Origin-Embedder-Policy "require-corp"
+    Cross-Origin-Opener-Policy "same-origin"
+    Cross-Origin-Resource-Policy "same-origin"
+  }
+}
+
+# Dev (auto self-signed)
+https://localhost {
+  import app
+  tls internal
+}
+
+# Prod (Let's Encrypt)
+https://{$APP_HOST:dummy.localhost} {
+  import app
+  basicauth / {
+    madi $2a$14$BVgc6QMpe3FLhsnGUJLXueUHGf.2hiseFbG4Ls.sVtC2GOM9J4uLG
+  }
+  tls {$TLS_MODE:internal} {
+    {$TLS_CHALLENGE:}
+    {$TLS_RESOLVERS:}
+  }
+}
+

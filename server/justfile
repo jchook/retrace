@@ -1,0 +1,5 @@
+# Generate OpenAPI spec
+gen:
+  curl -s localhost:3000/meta/docs/json > spec/openapi.json
+  grep -q '^{"openapi"' spec/openapi.json
+

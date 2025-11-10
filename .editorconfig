@@ -1,0 +1,16 @@
+[bin/*]
+end_of_line = lf
+indent_style = space
+indent_size = 2
+trim_trailing_whitespace = true
+
+[*.ts,*.js,*.json,*.scss]
+end_of_line = lf
+indent_style = space
+indent_size = 2
+trim_trailing_whitespace = true
+
+[justfile]
+end_of_line = lf
+indent_style = space
+indent_size = 2
