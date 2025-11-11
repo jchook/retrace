@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, integer, timestamp, text, pgEnum, uuid, bigint, index } from "drizzle-orm/pg-core";
+import { pgTable, serial, varchar, integer, timestamp, text, pgEnum, uuid, bigint, index, uniqueIndex, boolean } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 // Example entity: Items
@@ -39,11 +39,35 @@ export const captureStatusEnum = pgEnum("capture_status", ["pending", "success",
 // Tables
 export const users = pgTable("users", {
   id: uuid().primaryKey().default(sql`uuidv7()`),
-  name: text().notNull(),
-  email: text(),
+  name: text(),
+  email: text().notNull(),
   createdAt: timestamp({ withTimezone: true }).defaultNow(),
   updatedAt: timestamp({ withTimezone: true }).defaultNow(),
-});
+}, (t) => [
+  uniqueIndex("users_email_idx").on(t.email),
+]);
+
+// Unified auth tokens (login OTPs and API tokens)
+export const authTokenKind = pgEnum("auth_token_kind", ["login", "api"]);
+
+export const authTokens = pgTable("auth_tokens", {
+  id: uuid().primaryKey().default(sql`uuidv7()`),
+  userId: uuid().notNull().references(() => users.id, { onDelete: "cascade" }),
+  kind: authTokenKind().notNull(),
+
+  tokenHash: text().notNull(),
+  name: text(),
+  scope: text().array(),
+
+  expiresAt: timestamp({ withTimezone: true }).notNull(),
+  lastUsedAt: timestamp({ withTimezone: true }),
+  revoked: boolean().notNull().default(false),
+  createdAt: timestamp({ withTimezone: true }).defaultNow(),
+}, (t) => [
+  uniqueIndex("auth_tokens_token_hash_idx").on(t.tokenHash),
+  index("auth_tokens_user_idx").on(t.userId),
+  index("auth_tokens_user_expires_idx").on(t.userId, t.expiresAt),
+]);
 
 export const marks = pgTable("marks", {
   id: uuid().primaryKey().default(sql`uuidv7()`),

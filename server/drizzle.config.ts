@@ -8,7 +8,10 @@ export default defineConfig({
   dialect: "postgresql",
   casing: "snake_case",
   dbCredentials: {
-    url: `postgresql://${env.POSTGRES_USER}:${env.POSTGRES_PASSWORD}@${env.POSTGRES_HOST}:${env.POSTGRES_PORT}/${env.POSTGRES_DB}`,
+    host: env.POSTGRES_HOST || "db",
+    port: Number(env.POSTGRES_PORT) || 5432,
+    database: env.POSTGRES_DB || "app",
+    user: env.POSTGRES_USER,
+    password: env.POSTGRES_PASSWORD,
   },
 });
-

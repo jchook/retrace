@@ -7,6 +7,15 @@ list:
 build:
   cd client && bun run build
 
+client *args="zsh":
+  docker compose exec client "$@"
+
+server *args="zsh":
+  docker compose exec api "$@"
+
+root *args="ash":
+  docker compose exec -u root api "$@"
+
 # Drizzle Kit shortcut
 db *args="--help":
   docker compose exec api bun drizzle-kit "$@"
@@ -22,11 +31,11 @@ logs:
 
 # Interactive shell on the api server
 sh:
-  docker compose exec api bash
+  docker compose exec api zsh
 
 # Start the server
-up:
-  docker compose up --build
+up *args="--menu":
+  HOST_UID=$(id -u) HOST_GID=$(id -g) docker compose up --build --wait "$@"
 
 prod *args="up":
   docker compose -f docker-compose.prod.yml "$@"

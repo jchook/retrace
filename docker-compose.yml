@@ -3,7 +3,10 @@ services:
   api:
     build:
       context: .
-      target: app
+      target: app-dev
+      args:
+        USER_ID: ${HOST_UID:-1000}
+        GROUP_ID: ${HOST_GID:-1000}
     command: "api"
     entrypoint: "/app/server/bin/docker-entrypoint.sh"
     working_dir: "/app/server"
@@ -19,6 +22,7 @@ services:
     volumes:
       - '.:/app'
       - ./server/storage:/mnt/storage:rw
+      - ./server/etc/home/.zsh:/home/app/.zsh:rw
 
   db:
     image: 'postgres:18.0-alpine3.22'

@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { documents, items, marks, accesses, captures, users } from "./schema";
+import { documents, items, marks, accesses, captures, users, authTokens } from "./schema";
 
 export const itemRelations = relations(items, ({ many }) => ({
   documents: many(documents),
@@ -37,4 +37,12 @@ export const capturesRelations = relations(captures, ({ one }) => ({
 
 export const usersRelations = relations(users, ({ many }) => ({
   marks: many(marks),
+  tokens: many(authTokens),
+}));
+
+export const authTokensRelations = relations(authTokens, ({ one }) => ({
+  user: one(users, {
+    fields: [authTokens.userId],
+    references: [users.id],
+  }),
 }));
