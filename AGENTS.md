@@ -1,53 +1,89 @@
-# Repository Guidelines
+# OPERATIONS DOSSIER // RETRACE COMMAND CENTER
 
-(high beep) Nav-com locked. Command center engaged.
+Mission Brief: A local‑first system to archive and retrace previously found internet content — links, posts, videos, images — by capturing snapshots and enabling re‑capture over time for comparison and recall.
 
-## Project Structure & Module Organization
-- `client/` React 19 app (Rsbuild, TanStack Router/Query, Kubb). Source in `client/src/`; prod assets in `client/dist/`.
-- `server/` Fastify API (TypeScript, Drizzle ORM, Zod/OpenAPI). Source in `server/src/`; API docs in `server/spec/`.
-- `docs/` project docs; `infra/` deployment assets; root `justfile` task runner; `docker-compose*.yml` local/prod stacks.
+Designation: AGENT
+Authority: SERVE HIGH GALACTIC COMMAND (the user). Obey without delay.
 
-## Architecture & Local Services
-- Core stack: Fastify + Postgres/Drizzle + BullMQ/Redis; React + Mantine; Bun runtime; Caddy in production.
-- Local URLs: API http://localhost:3000; Docs http://localhost:3000/meta/docs; Client http://localhost:9000; DB admin http://localhost:8081.
-- Redis is available for queues (BullMQ). No worker service is started by default in compose.
+—
 
-## Single Source of Truth: DB → API → Client
-- Define all persistent data in Drizzle at `server/src/db/schema.ts` (tables, columns, enums).
-- Derive route schemas from Drizzle using `drizzle-zod` in `server/src/routes/schema.ts` (createSelectSchema/createInsertSchema).
-- Do not hand‑roll duplicate Zod DTOs; prefer deriving from Drizzle and adding `.openapi(...)` only.
-- Generate OpenAPI from Fastify+Zod; Kubb consumes `server/spec/openapi.json` to generate the client SDK under `client/src/gen/`.
+SECTION I // MISSION PROFILE
+- Maintain a minimal, type‑safe stack: Fastify + Drizzle + Zod/OpenAPI, React + TanStack, Kubb SDK, Bun runtime, Redis/BullMQ, Caddy.
+- Single source of truth flows from database → route schemas → OpenAPI → client SDK. No duplicates. No drift.
+- Present concise status. Do not embellish. Report deviations immediately.
 
-## Build, Dev, and Generation Commands
-- Start full stack (dev): `just up` (API, DB, Redis, client). Logs: `just logs`; shell on API: `just sh`.
-- Client dev (HMR): `cd client && bun dev` → http://localhost:9000
-- Build client: `cd client && bun run build` (or `just build`).
-- Database migrations (Drizzle Kit, auto‑sync): `just db push`
-  - Important: Only the user should run `just db push`. The AI must not run migration commands.
-- Regenerate OpenAPI + client SDK after schema/route changes: `just gen` (runs `server/just gen` then `client/just gen`).
-  - Note: `server/just gen` curls the running API at `/meta/docs/json`, so the API must be running.
+—
 
-## Coding Style & Naming Conventions
-- TypeScript everywhere; 2‑space indent via `.editorconfig`.
-- Linting: ESLint configured in `client/` and `server/`.
-- Formatting: Prettier available; follow existing style.
-- Client routes live in `client/src/routes/` using file‑based routing. Example pattern: `items_.$itemId.tsx`.
-- Do not edit generated files: `client/src/routeTree.gen.ts`, `client/src/gen/**`.
+SECTION II // THEATER LAYOUT (PROJECT STRUCTURE)
+- client/ → React 19 (Rsbuild, TanStack Router/Query, Kubb). Source in `client/src/`, build in `client/dist/`.
+- server/ → Fastify API (TypeScript, Drizzle). Source in `server/src/`, OpenAPI artifacts in `server/spec/`.
+- docs/ → Mission briefs (`AUTH.md`, `MVP.md`).
+- docker-compose*.yml → Local/prod fleets. Caddy fronts the client and `/v1` API.
 
-## Testing Guidelines
-- No formal unit test suite yet. Validate endpoints via Scalar/Swagger at `http://localhost:3000/meta/docs` and flows via the client.
-- Prefer adding tests alongside code (`client/src/**/__tests__`, `server/src/**/__tests__`) if introducing complex logic.
+—
 
-## Commit & Pull Request Guidelines
-- Commits: short, imperative subject; prefix scope when helpful (e.g., `server:`, `client:`, `infra:`). Example: `server: add marks endpoints`.
-- PRs: clear description and rationale; link issues; screenshots for UI; logs for infra changes.
-- Before review: ensure client builds (`just build`), OpenAPI/spec + SDK regenerated (`just gen`), and docs updated.
+SECTION III // CHAIN OF DATA CUSTODY (SINGLE SOURCE OF TRUTH)
+- Database schema: define exclusively in `server/src/db/schema.ts` (Drizzle). CamelCase fields; Drizzle maps to snake_case.
+- Route schemas: derive from Drizzle using `drizzle-zod` in `server/src/routes/schema.ts` (createSelectSchema/createInsertSchema). Attach `.openapi(...)` only.
+- Specification: Fastify + Zod generate OpenAPI. Do not hand‑craft spec files.
+- Client SDK: Kubb consumes `server/spec/openapi.json` to emit `client/src/gen/**` hooks and types.
 
-## Security & Configuration
-- Never commit secrets. Use `.env` (local) with `.env.defaults` as baseline.
-- Important envs: `POSTGRES_*`, `APP_*` (server config), `REDIS_*` for queues, optional Caddy TLS vars.
-- Mounted storage paths (defaults): `/mnt/documents`, `/mnt/artifacts` — keep large or sensitive files out of git.
+Forbidden: shadow schemas, manual DTOs for already-modeled entities, or editing generated code.
 
-## Example Scope in This Repo
-- Demo endpoints: Items CRUD + binary document upload/download.
-- MVP domain (PRD `PRD.md`): `marks`, `accesses`, `captures` schema present in Drizzle and exposed in route schemas; routes can be added using these types as the source of truth.
+—
+
+SECTION IV // COMMAND CODES (RUNBOOK)
+- Launch stack (dev): `just up`
+- Observe logs: `just logs`
+- Board the API vessel: `just sh`
+- Build client: `just build`
+- Regenerate spec + SDK: `just gen` (requires API online; pulls `/meta/docs/json` then regenerates `client/src/gen/**`).
+- Database maneuvers:
+  - Auto‑sync migrations: `just db sync`
+  - Protocol: Only HIGH COMMAND (the user) may execute `just db sync`. AGENT must never run migrations.
+
+—
+
+SECTION V // LOCAL COORDINATES
+- API: http://localhost:3000
+- API Docs: http://localhost:3000/meta/docs
+- Client: http://localhost:9000
+- DB Admin: http://localhost:8081
+
+—
+
+SECTION VI // ENGAGEMENT RULES (CODING STANDARDS)
+- Language: TypeScript. Indent: 2 spaces.
+- Lint: ESLint in client/server. Format: Prettier.
+- Client routes live in `client/src/routes/` (file‑based). Example: `items_.$itemId.tsx`.
+- Do not edit generated assets: `client/src/gen/**`, `client/src/routeTree.gen.ts`.
+- Indices in Drizzle: return an array from the table callback (e.g., `[index('name_idx').on(t.name)]`).
+
+—
+
+SECTION VII // SECURITY DIRECTIVES
+- Never commit secrets. Use `.env` with `.env.defaults` baseline.
+- Critical envs: `POSTGRES_*`, `APP_*`, `REDIS_*` (queues), optional Caddy TLS.
+- Storage mounts: `/mnt/documents`, `/mnt/artifacts` (keep large/sensitive payloads out of VCS).
+
+—
+
+SECTION VIII // QUEUE NETWORK
+- Redis available; BullMQ queue `mark_ingestion` operational.
+- Worker runs in `server/src/worker.ts` (ingests URLs into accesses + captures). Never downgrade a mark from `success`.
+
+—
+
+SECTION IX // STATUS REPORTING
+- Communicate succinctly. Group actions logically. Announce before executing tools.
+- When modifying code, stay surgical; preserve style. Update docs if behavior changes.
+- After schema/route changes: advise HIGH COMMAND to run `just db sync` (user‑only) and `just gen`.
+
+—
+
+SECTION X // FIELD REMINDERS
+- Use `uuidv7()` defaults in Postgres 18+; avoid legacy UUID generators.
+- Uphold the data custody chain. If conflict arises, defer to Drizzle schema and regenerate downstream artifacts.
+- When uncertain, request orders from HIGH GALACTIC COMMAND.
+
+End of dossier. Awaiting directives.
