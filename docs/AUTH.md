@@ -12,7 +12,7 @@ Provide a **minimal, password-less authentication system** for Retrace that supp
 * **API tokens** for browser extensions and CLI (long-lived).
 * Immediate OTP deletion on use — no lingering single-use tokens.
 * Single unified table (`auth_tokens`) with typed `kind` field.
-* Native PostgreSQL 18 `uuidv7()` IDs for chronological ordering.
+* Native PostgreSQL 17 `gen_random_uuid()` IDs for now.
 
 ---
 
@@ -89,7 +89,7 @@ Result: OTPs are single-use and leave no residue.
 import { pgTable, uuid, text, timestamp, boolean, pgEnum } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
-export const authTokenKind = pgEnum("auth_token_kind", ["login", "api"]);
+export const authTokenKind = pgEnum("auth_token_kind", ["login", "api", "verify"]);
 
 export const users = pgTable("users", {
   id: uuid().primaryKey().default(sql`uuidv7()`),
@@ -106,8 +106,9 @@ export const authTokens = pgTable("auth_tokens", {
   name: text(),                  // optional (API tokens)
   scope: text().array(),         // optional
 
-  expiresAt: timestamp({ withTimezone: true }).notNull(),
   revoked: boolean().notNull().default(false),
+  revokedAt: timestamp({ withTimezone: true }),
+  expiresAt: timestamp({ withTimezone: true }).notNull(),
   lastUsedAt: timestamp({ withTimezone: true }),
   createdAt: timestamp({ withTimezone: true }).defaultNow(),
 });
@@ -117,15 +118,7 @@ export const authTokens = pgTable("auth_tokens", {
 
 ## 5. Cleanup & Lifecycle
 
-**Hourly cleanup task:**
-
-```sql
-DELETE FROM auth_tokens
-WHERE expires_at < now()
-   OR revoked = true;
-```
-
-OTPs are deleted immediately on use; this job removes expired or revoked tokens.
+OTPs are deleted immediately on use
 
 ---
 
@@ -134,7 +127,6 @@ OTPs are deleted immediately on use; this job removes expired or revoked tokens.
 | Concern           | Practice                                            |
 | ----------------- | --------------------------------------------------- |
 | **Token secrecy** | Store only hashes (`sha256`). Never log raw values. |
-| **Revocation**    | Immediate via `revoked=true`.                       |
 | **Expiry**        | OTP = 10 min, API = 90 days (default).              |
 | **Transport**     | HTTPS only.                                         |
 | **Rate limits**   | Enforce per-email and per-IP on OTP requests.       |
@@ -145,13 +137,13 @@ OTPs are deleted immediately on use; this job removes expired or revoked tokens.
 
 ## 7. Endpoints Summary
 
-| Method   | Path                   | Description                   | Auth    |
-| -------- | ---------------------- | ----------------------------- | ------- |
-| `POST`   | `/auth/request-otp`    | Send OTP to email             | —       |
-| `POST`   | `/auth/verify-otp`     | Verify OTP and create session | —       |
-| `POST`   | `/auth/api-tokens`     | Create API token              | Session |
-| `GET`    | `/auth/api-tokens`     | List user tokens              | Session |
-| `DELETE` | `/auth/api-tokens/:id` | Revoke token                  | Session |
+ | Method   | Path                   | Description                   | Auth    |
+ |----------|------------------------|-------------------------------|---------|
+ | `POST`   | `/auth/email-otp`      | Send OTP to email             | —       |
+ | `POST`   | `/auth/login`          | Verify OTP and create session | —       |
+ | `POST`   | `/auth/api-tokens`     | Create API token              | Session |
+ | `GET`    | `/auth/api-tokens`     | List user tokens              | Session |
+ | `DELETE` | `/auth/api-tokens/:id` | Revoke token                  | Session |
 
 ---
 
@@ -160,8 +152,8 @@ OTPs are deleted immediately on use; this job removes expired or revoked tokens.
 ✅ Users can sign in via email + OTP.
 ✅ OTPs are deleted on successful verification.
 ✅ API tokens work for browser/CLI with `Bearer` header.
-✅ Revoked or expired tokens are denied.
-✅ All IDs generated via Postgres 18 `uuidv7()`.
+✅ Deleted, revoked, or expired tokens are denied.
+✅ All IDs generated via `gen_random_uuid()`.
 ✅ Hourly cleanup leaves DB in steady state.
 
 ---
