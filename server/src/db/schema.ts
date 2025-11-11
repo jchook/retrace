@@ -38,7 +38,7 @@ export const captureStatusEnum = pgEnum("capture_status", ["pending", "success",
 
 // Tables
 export const users = pgTable("users", {
-  id: uuid().primaryKey().default(sql`uuidv7()`),
+  id: uuid().primaryKey().default(sql`gen_random_uuid()`),
   name: text(),
   email: text().notNull(),
   createdAt: timestamp({ withTimezone: true }).defaultNow(),
@@ -51,7 +51,7 @@ export const users = pgTable("users", {
 export const authTokenKind = pgEnum("auth_token_kind", ["login", "api"]);
 
 export const authTokens = pgTable("auth_tokens", {
-  id: uuid().primaryKey().default(sql`uuidv7()`),
+  id: uuid().primaryKey().default(sql`gen_random_uuid()`),
   userId: uuid().notNull().references(() => users.id, { onDelete: "cascade" }),
   kind: authTokenKind().notNull(),
 
@@ -62,6 +62,7 @@ export const authTokens = pgTable("auth_tokens", {
   expiresAt: timestamp({ withTimezone: true }).notNull(),
   lastUsedAt: timestamp({ withTimezone: true }),
   revoked: boolean().notNull().default(false),
+  revokedAt: timestamp({ withTimezone: true }),
   createdAt: timestamp({ withTimezone: true }).defaultNow(),
 }, (t) => [
   uniqueIndex("auth_tokens_token_hash_idx").on(t.tokenHash),
@@ -70,7 +71,7 @@ export const authTokens = pgTable("auth_tokens", {
 ]);
 
 export const marks = pgTable("marks", {
-  id: uuid().primaryKey().default(sql`uuidv7()`),
+  id: uuid().primaryKey().default(sql`gen_random_uuid()`),
   userId: uuid()
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
@@ -97,7 +98,7 @@ export const marks = pgTable("marks", {
 ]);
 
 export const accesses = pgTable("accesses", {
-  id: uuid().primaryKey().default(sql`uuidv7()`),
+  id: uuid().primaryKey().default(sql`gen_random_uuid()`),
   markId: uuid()
     .notNull()
     .references(() => marks.id, { onDelete: "cascade" }),
@@ -115,7 +116,7 @@ export const accesses = pgTable("accesses", {
 ]);
 
 export const captures = pgTable("captures", {
-  id: uuid().primaryKey().default(sql`uuidv7()`),
+  id: uuid().primaryKey().default(sql`gen_random_uuid()`),
   accessId: uuid()
     .notNull()
     .references(() => accesses.id, { onDelete: "cascade" }),
