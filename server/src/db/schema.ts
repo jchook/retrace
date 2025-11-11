@@ -38,7 +38,7 @@ export const captureStatusEnum = pgEnum("capture_status", ["pending", "success",
 
 // Tables
 export const users = pgTable("users", {
-  id: uuid().primaryKey().default(sql`uuid_generate_v7()`),
+  id: uuid().primaryKey().default(sql`uuidv7()`),
   name: text().notNull(),
   email: text(),
   createdAt: timestamp({ withTimezone: true }).defaultNow(),
@@ -46,7 +46,7 @@ export const users = pgTable("users", {
 });
 
 export const marks = pgTable("marks", {
-  id: uuid().primaryKey().default(sql`uuid_generate_v7()`),
+  id: uuid().primaryKey().default(sql`uuidv7()`),
   userId: uuid()
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
@@ -68,12 +68,12 @@ export const marks = pgTable("marks", {
   error: text(),
   createdAt: timestamp({ withTimezone: true }).defaultNow(),
   updatedAt: timestamp({ withTimezone: true }).defaultNow(),
-}, (t) => ({
-  marksUserMarkedAtIdx: index("marks_user_marked_at_idx").on(t.userId, t.markedAt),
-}));
+}, (t) => [
+  index("marks_user_marked_at_idx").on(t.userId, t.markedAt),
+]);
 
 export const accesses = pgTable("accesses", {
-  id: uuid().primaryKey().default(sql`uuid_generate_v7()`),
+  id: uuid().primaryKey().default(sql`uuidv7()`),
   markId: uuid()
     .notNull()
     .references(() => marks.id, { onDelete: "cascade" }),
@@ -86,12 +86,12 @@ export const accesses = pgTable("accesses", {
   contentLength: bigint({ mode: "number" }),
   headers: text(),
   error: text(),
-}, (t) => ({
-  accessesMarkAccessedAtIdx: index("accesses_mark_accessed_at_idx").on(t.markId, t.accessedAt),
-}));
+}, (t) => [
+  index("accesses_mark_accessed_at_idx").on(t.markId, t.accessedAt),
+]);
 
 export const captures = pgTable("captures", {
-  id: uuid().primaryKey().default(sql`uuid_generate_v7()`),
+  id: uuid().primaryKey().default(sql`uuidv7()`),
   accessId: uuid()
     .notNull()
     .references(() => accesses.id, { onDelete: "cascade" }),
@@ -105,6 +105,6 @@ export const captures = pgTable("captures", {
   checksum: text(),
 
   createdAt: timestamp({ withTimezone: true }).defaultNow(),
-}, (t) => ({
-  capturesAccessOrderIdx: index("captures_access_order_idx").on(t.accessId, t.order),
-}));
+}, (t) => [
+  index("captures_access_order_idx").on(t.accessId, t.order),
+]);

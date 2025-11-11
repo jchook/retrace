@@ -21,23 +21,23 @@ services:
       - ./server/storage:/mnt/storage:rw
 
   db:
-    image: 'postgres:17-alpine'
+    image: 'postgres:18.0-alpine3.22'
     shm_size: 128mb
     environment:
-      POSTGRES_USER: madi
-      POSTGRES_PASSWORD: madi
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
     healthcheck:
-      test: pg_isready -U madi -h 127.0.0.1
+      test: pg_isready -U app -h 127.0.0.1
       interval: 5s
     volumes:
-      - "pg_data:/var/lib/postgresql/data:rw"
+      - "pg_data:/var/lib/postgresql:rw"
 
   pgweb:
     image: sosedoff/pgweb
     ports:
       - "127.0.0.1:8081:8081"
     environment:
-      PGWEB_DATABASE_URL: "postgres://madi:madi@db:5432/madi?sslmode=disable"
+      PGWEB_DATABASE_URL: "postgres://app:app@db:5432/app?sslmode=disable"
     depends_on:
       db:
         condition: service_healthy

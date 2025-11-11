@@ -37,7 +37,7 @@ rsync:
     --exclude .git \
     --exclude .env \
     --exclude server/storage/ \
-    ./ madi:app/
+    ./ retrace.sh:app/
 
 deploy: rsync
-  ssh madi "cd app && just prod up --build -d"
+  ssh retrace.sh "cd app && just prod up --build -d"
