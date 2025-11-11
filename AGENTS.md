@@ -47,6 +47,13 @@ Forbidden: shadow schemas, manual DTOs for already-modeled entities, or editing 
 - Database maneuvers:
   - Auto‑sync migrations: `just db sync`
   - Protocol: Only HIGH COMMAND (the user) may execute `just db sync`. AGENT must never run migrations.
+ - Bun protocol:
+   - Invoke Bun exclusively via command relays (never call `bun` directly):
+     - Server: `just server bun …`
+     - Client: `just client bun …`
+   - Examples:
+     - Server: `just server bun patch drizzle-kit`, `just server bun install`, `just server bun x drizzle-kit --version`
+     - Client: `just client bun install`, `just client bun x rsbuild --version`
 
 —
 
