@@ -6,9 +6,8 @@ const MB = 1024 * 1024;
 
 // Configuration schema + defaults
 export const ConfigSchema = z.object({
-  name: z.string().default("App"),
-  documentStore: z.string().default("/mnt/documents"),
-  artifactStore: z.string().default("/mnt/artifacts"),
+  name: z.string().default("retrace.sh"),
+  storage: z.string().default("/mnt/storage"),
   uploadFileSizeLimit: z.coerce
     .number()
     .min(1 * MB, {
