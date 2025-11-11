@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, integer, timestamp, text, pgEnum, uuid, bigint } from "drizzle-orm/pg-core";
+import { pgTable, serial, varchar, integer, timestamp, text, pgEnum, uuid, bigint, index } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 // Example entity: Items
@@ -68,7 +68,9 @@ export const marks = pgTable("marks", {
   error: text(),
   createdAt: timestamp({ withTimezone: true }).defaultNow(),
   updatedAt: timestamp({ withTimezone: true }).defaultNow(),
-});
+}, (t) => ({
+  marksUserMarkedAtIdx: index("marks_user_marked_at_idx").on(t.userId, t.markedAt),
+}));
 
 export const accesses = pgTable("accesses", {
   id: uuid().primaryKey().default(sql`uuid_generate_v7()`),
@@ -84,7 +86,9 @@ export const accesses = pgTable("accesses", {
   contentLength: bigint({ mode: "number" }),
   headers: text(),
   error: text(),
-});
+}, (t) => ({
+  accessesMarkAccessedAtIdx: index("accesses_mark_accessed_at_idx").on(t.markId, t.accessedAt),
+}));
 
 export const captures = pgTable("captures", {
   id: uuid().primaryKey().default(sql`uuid_generate_v7()`),
@@ -101,4 +105,6 @@ export const captures = pgTable("captures", {
   checksum: text(),
 
   createdAt: timestamp({ withTimezone: true }).defaultNow(),
-});
+}, (t) => ({
+  capturesAccessOrderIdx: index("captures_access_order_idx").on(t.accessId, t.order),
+}));

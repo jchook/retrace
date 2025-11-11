@@ -53,15 +53,15 @@ No front-end UI, search UX, or analytics is in scope for the MVP.
 * **BullMQ Worker**
 
   * Queue: `mark_ingestion`
-  * Jobs contain `{ markId, url }`
-  * Worker performs HTTP fetch → inserts `access` + `captures` → updates mark status.
+  * Jobs contain `{ markId }`
+  * Worker performs HTTP fetch → inserts `access` + `captures` → updates timestamps; mark reaches `success` once and is never downgraded; failures are reflected per access/capture.
 * **Postgres (via Drizzle)**
 
-  * Schema: `marks`, `accesses`, `captures`
+  * Schema: `users`, `marks`, `accesses`, `captures`
   * UUIDv7 primary keys.
 * **Filesystem / object storage**
 
-  * Captures stored locally under `/data/marks/<markId>/<accessId>/`.
+  * Captures stored locally under `<artifactStore>/marks/<markId>/<accessId>/`.
 
 ---
 
@@ -71,9 +71,10 @@ No front-end UI, search UX, or analytics is in scope for the MVP.
 
 | Table      | Description                            |
 | ---------- | -------------------------------------- |
+| `users`    | Concept of a user (no auth)            |
 | `marks`    | User’s saved items (“things I marked”) |
-| `accesses` | Each retrieval of a mark’s resource    |
-| `captures` | Files and data produced from an access |
+| `accesses` | Each retrieval of a mark’s resource (with status) |
+| `captures` | Files and data produced from an access (with status) |
 
 ```typescript
 import { pgTable, uuid, text, timestamp, integer, pgEnum, boolean } from "drizzle-orm/pg-core";
@@ -236,11 +237,16 @@ db.query.marks.findMany({
 
 ## 7. API Contract (MVP)
 
-| Method           | Path                                         | Description           | Auth |
-| ---------------- | -------------------------------------------- | --------------------- | ---- |
-| `POST /marks`    | Create a new mark                            | optional userId param |      |
-| `GET /marks`     | List marks (latest first)                    | optional user filter  |      |
-| `GET /marks/:id` | Fetch one mark with nested accesses/captures | —                     |      |
+| Method                  | Path                 | Description                                   | Auth |
+| ----------------------- | -------------------- | --------------------------------------------- | ---- |
+| `POST /users`           | /users               | Create a user (concept only)                  | —    |
+| `GET /users`            | /users               | List users                                    | —    |
+| `GET /users/:id`        | /users/:id           | Fetch user                                    | —    |
+| `GET /users/:id/marks`  | /users/:id/marks     | List marks for a user                         | —    |
+| `POST /marks`           | /marks               | Create a new mark and enqueue ingestion       | —    |
+| `GET /marks`            | /marks               | List marks (optional ?userId filter)          | —    |
+| `GET /marks/:id`        | /marks/:id           | Mark with nested accesses/captures            | —    |
+| `POST /marks/:id/ingest`| /marks/:id/ingest    | Trigger ingestion (creates a new access)      | —    |
 
 **Example:**
 
@@ -271,10 +277,7 @@ Response:
 **Job payload:**
 
 ```json
-{
-  "markId": "018f...bcb8",
-  "url": "https://twitter.com/user/status/123"
-}
+{ "markId": "018f...bcb8" }
 ```
 
 **Worker steps:**
@@ -283,9 +286,7 @@ Response:
 2. Insert into `accesses`
 3. Store files under `data/marks/<markId>/<accessId>/`
 4. Insert `captures`
-5. Update `marks.status` → `"success"`
-
-Errors are caught and logged, updating mark status → `"failed"`.
+5. Update timestamps. Mark reaches `success` once a capture succeeds and never downgrades on later failures. Failures are reflected at `accesses.status` / `captures.status`.
 
 ---
 
@@ -321,8 +322,8 @@ data/
 ## 11. MVP Acceptance Criteria
 
 ✅ `POST /marks` creates a new mark and queues a job.
-✅ Worker fetches the URL, inserts an access and capture(s), updates status → `success`.
-✅ `GET /marks` lists user marks sorted by `markedAt`.
+✅ Worker fetches the URL, inserts an access and capture(s). Successful capture marks the mark as `success`; later failures do not downgrade it.
+✅ `GET /marks` lists marks sorted by `markedAt` (filterable by `userId`).
 ✅ `GET /marks/:id` returns nested accesses + captures.
 ✅ Schema and relations run cleanly in Drizzle with Postgres.
 ✅ Files stored locally in expected directory tree.
@@ -330,4 +331,3 @@ data/
 ---
 
 Would you like me to extend this PRD with the **Fastify route schema definitions** (`marks.route.ts` skeleton with Zod) so Codex can generate the OpenAPI spec next?
-
