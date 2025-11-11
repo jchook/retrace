@@ -114,7 +114,7 @@ export const captureRoleEnum = pgEnum("capture_role", [
 // ────────────────────────────────────────────────────────────────
 
 export const marks = pgTable("marks", {
-  id: uuid().primaryKey().default(sql`uuid_generate_v7()`),
+  id: uuid().primaryKey().default(sql`uuidv7()`),
   userId: uuid().notNull(),
 
   kind: markKindEnum().notNull().default("url"),
@@ -143,7 +143,7 @@ export const marks = pgTable("marks", {
 // ────────────────────────────────────────────────────────────────
 
 export const accesses = pgTable("accesses", {
-  id: uuid().primaryKey().default(sql`uuid_generate_v7()`),
+  id: uuid().primaryKey().default(sql`uuidv7()`),
   markId: uuid()
     .notNull()
     .references(() => marks.id, { onDelete: "cascade" }),
@@ -162,7 +162,7 @@ export const accesses = pgTable("accesses", {
 // ────────────────────────────────────────────────────────────────
 
 export const captures = pgTable("captures", {
-  id: uuid().primaryKey().default(sql`uuid_generate_v7()`),
+  id: uuid().primaryKey().default(sql`uuidv7()`),
   accessId: uuid()
     .notNull()
     .references(() => accesses.id, { onDelete: "cascade" }),

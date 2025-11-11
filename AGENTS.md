@@ -1,4 +1,6 @@
-# Repository Guidelines (Core Example)
+# Repository Guidelines
+
+(high beep) Nav-com locked. Command center engaged.
 
 ## Project Structure & Module Organization
 - `client/` React 19 app (Rsbuild, TanStack Router/Query, Kubb). Source in `client/src/`; prod assets in `client/dist/`.
@@ -20,7 +22,8 @@
 - Start full stack (dev): `just up` (API, DB, Redis, client). Logs: `just logs`; shell on API: `just sh`.
 - Client dev (HMR): `cd client && bun dev` → http://localhost:9000
 - Build client: `cd client && bun run build` (or `just build`).
-- Database migrations (Drizzle Kit in API container): `just db push` (append args after `--`).
+- Database migrations (Drizzle Kit, auto‑sync): `just db push`
+  - Important: Only the user should run `just db push`. The AI must not run migration commands.
 - Regenerate OpenAPI + client SDK after schema/route changes: `just gen` (runs `server/just gen` then `client/just gen`).
   - Note: `server/just gen` curls the running API at `/meta/docs/json`, so the API must be running.
 
