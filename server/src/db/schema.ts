@@ -35,9 +35,19 @@ export const markStatusEnum = pgEnum("mark_status", ["pending", "processing", "s
 export const captureRoleEnum = pgEnum("capture_role", ["primary", "image", "video", "meta", "auxiliary"]);
 
 // Tables
+export const users = pgTable("users", {
+  id: uuid().primaryKey().default(sql`uuid_generate_v7()`),
+  name: text().notNull(),
+  email: text(),
+  createdAt: timestamp({ withTimezone: true }).defaultNow(),
+  updatedAt: timestamp({ withTimezone: true }).defaultNow(),
+});
+
 export const marks = pgTable("marks", {
   id: uuid().primaryKey().default(sql`uuid_generate_v7()`),
-  userId: uuid().notNull(),
+  userId: uuid()
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
 
   kind: markKindEnum().notNull().default("url"),
   status: markStatusEnum().notNull().default("pending"),
@@ -68,7 +78,7 @@ export const accesses = pgTable("accesses", {
   statusCode: integer(),
   mimeType: text(),
   etag: text(),
-  contentLength: bigint(),
+  contentLength: integer(),
   headers: text(),
   error: text(),
 });
@@ -83,7 +93,7 @@ export const captures = pgTable("captures", {
   role: captureRoleEnum().notNull(),
   mimeType: text(),
   storageKey: text().notNull(),
-  bytesSize: bigint(),
+  bytesSize: integer(),
   checksum: text(),
 
   createdAt: timestamp({ withTimezone: true }).defaultNow(),

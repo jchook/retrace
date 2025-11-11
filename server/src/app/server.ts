@@ -50,6 +50,7 @@ await fastify.register(import("@fastify/swagger"), {
     ],
     tags: [
       { name: "Meta", description: "Meta information" },
+      { name: "Users", description: "User concept (no auth)" },
       { name: "Items", description: "Example CRUD entity" },
       { name: "Documents", description: "Binary upload/download" },
       { name: "Marks", description: "Saved user marks" },

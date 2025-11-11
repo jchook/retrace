@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { documents, items, marks, accesses, captures } from "./schema";
+import { documents, items, marks, accesses, captures, users } from "./schema";
 
 export const itemRelations = relations(items, ({ many }) => ({
   documents: many(documents),
@@ -12,8 +12,12 @@ export const documentRelations = relations(documents, ({ one }) => ({
   }),
 }));
 
-export const marksRelations = relations(marks, ({ many }) => ({
+export const marksRelations = relations(marks, ({ one, many }) => ({
   accesses: many(accesses),
+  user: one(users, {
+    fields: [marks.userId],
+    references: [users.id],
+  }),
 }));
 
 export const accessesRelations = relations(accesses, ({ one, many }) => ({
@@ -29,4 +33,8 @@ export const capturesRelations = relations(captures, ({ one }) => ({
     fields: [captures.accessId],
     references: [accesses.id],
   }),
+}));
+
+export const usersRelations = relations(users, ({ many }) => ({
+  marks: many(marks),
 }));

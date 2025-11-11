@@ -1,7 +1,7 @@
 import { Readable } from "node:stream";
 import { z } from "zod";
 import { createSchemaFactory, createSelectSchema } from "drizzle-zod";
-import { documents, items, marks, accesses, captures } from "../db/schema";
+import { documents, items, marks, accesses, captures, users } from "../db/schema";
 
 const { createInsertSchema } = createSchemaFactory({
   coerce: { date: true },
@@ -138,6 +138,25 @@ export const MarkPost = createInsertSchema(marks).openapi({
     url: "https://twitter.com/user/status/123",
     tags: ["meme", "ai"],
     kind: "url",
+  },
+});
+
+export const User = createSelectSchema(users).openapi({
+  ref: "User",
+  example: {
+    id: "018f0000-aaaa-bbbb-cccc-333333333333",
+    name: "Ada Lovelace",
+    email: "ada@example.com",
+    createdAt: ExampleDate,
+    updatedAt: ExampleDate,
+  },
+});
+
+export const UserPost = createInsertSchema(users).openapi({
+  ref: "UserPost",
+  example: {
+    name: "Ada Lovelace",
+    email: "ada@example.com",
   },
 });
 

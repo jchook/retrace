@@ -5,16 +5,158 @@ import { pipeline, Transform } from "node:stream";
 import { promisify } from "node:util";
 import { z } from "zod";
 import { getVersionString } from "../app/meta";
-import { Binary, Document, ErrorResponse, IdParam, Item, ItemPost, ItemPut } from "./schema";
+import {
+  Binary,
+  Document,
+  ErrorResponse,
+  IdParam,
+  Item,
+  ItemPost,
+  ItemPut,
+  Mark,
+  MarkPost,
+  MarkWithAccessesAndCaptures,
+  UuidParam,
+  User,
+  UserPost,
+} from "./schema";
 import { config, ConfigSchema } from "../app/config";
 import { App } from "../app";
 import { db } from "../db";
-import { documents, items } from "../db/schema";
-import { desc, eq } from "drizzle-orm";
+import { documents, items, marks, accesses, captures, users } from "../db/schema";
+import { asc, desc, eq } from "drizzle-orm";
+import { markIngestionQueue } from "../queue/queues";
 
 const pipelineAsync = promisify(pipeline);
 
 export function withV1(app: App) {
+  // Users (concept only, no auth)
+  app.route({
+    method: "POST",
+    url: "/users",
+    schema: {
+      description: "Create a user (no auth)",
+      tags: ["Users"],
+      body: UserPost,
+      response: { 201: User },
+    },
+    handler: async (req, res) => {
+      const [created] = await db.insert(users).values(req.body).returning();
+      return res.status(201).send(created);
+    },
+  });
+
+  app.route({
+    method: "GET",
+    url: "/users",
+    schema: {
+      description: "List users",
+      tags: ["Users"],
+      response: { 200: z.array(User) },
+    },
+    handler: async () => {
+      return db.query.users.findMany({ orderBy: asc(users.createdAt), limit: 200 });
+    },
+  });
+
+  app.route({
+    method: "GET",
+    url: "/users/:id",
+    schema: {
+      description: "Get user by id",
+      tags: ["Users"],
+      params: z.object({ id: UuidParam }),
+      response: { 200: User, 404: ErrorResponse },
+    },
+    handler: async (req, res) => {
+      const user = await db.query.users.findFirst({ where: eq(users.id, req.params.id) });
+      if (!user) return res.status(404).send({ error: "User not found" });
+      return user;
+    },
+  });
+
+  app.route({
+    method: "GET",
+    url: "/users/:id/marks",
+    schema: {
+      description: "List marks for a user",
+      tags: ["Users", "Marks"],
+      params: z.object({ id: UuidParam }),
+      response: { 200: z.array(Mark) },
+    },
+    handler: async (req) => {
+      return db.query.marks.findMany({ where: eq(marks.userId, req.params.id), orderBy: desc(marks.markedAt), limit: 100 });
+    },
+  });
+  // Marks (PRD MVP)
+  app.route({
+    method: "POST",
+    url: "/marks",
+    schema: {
+      description: "Create a new mark",
+      tags: ["Marks"],
+      body: MarkPost,
+      response: { 201: Mark },
+    },
+    handler: async (req, res) => {
+      const [created] = await db.insert(marks).values(req.body).returning();
+      // Fire-and-forget queue job for ingestion (optional in dev)
+      try {
+        await markIngestionQueue.add("ingest", {
+          markId: created.id,
+          url: created.url,
+        });
+      } catch (err) {
+        req.log.warn({ err }, "Failed to enqueue mark ingestion job");
+      }
+      return res.status(201).send(created);
+    },
+  });
+
+  app.route({
+    method: "GET",
+    url: "/marks",
+    schema: {
+      description: "List marks (latest first)",
+      tags: ["Marks"],
+      querystring: z.object({ userId: z.string().uuid().optional() }),
+      response: { 200: z.array(Mark) },
+    },
+    handler: async (req) => {
+      const q = req.query.userId
+        ? { where: eq(marks.userId, req.query.userId), orderBy: desc(marks.markedAt), limit: 100 }
+        : { orderBy: desc(marks.markedAt), limit: 100 };
+      return db.query.marks.findMany(q as any);
+    },
+  });
+
+  app.route({
+    method: "GET",
+    url: "/marks/:id",
+    schema: {
+      description: "Fetch one mark with nested accesses/captures",
+      tags: ["Marks"],
+      params: z.object({ id: UuidParam }),
+      response: { 200: MarkWithAccessesAndCaptures, 404: ErrorResponse },
+    },
+    handler: async (req, res) => {
+      const mark = await db.query.marks.findFirst({
+        where: eq(marks.id, req.params.id),
+        with: {
+          accesses: {
+            orderBy: desc(accesses.accessedAt),
+            with: {
+              captures: {
+                orderBy: asc(captures.order),
+              },
+            },
+          },
+        },
+      });
+      if (!mark) return res.status(404).send({ error: "Mark not found" });
+      return mark as any;
+    },
+  });
   // Items CRUD
   app.route({
     method: "POST",
