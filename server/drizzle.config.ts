@@ -13,5 +13,6 @@ export default defineConfig({
     database: env.POSTGRES_DB || "app",
     user: env.POSTGRES_USER,
     password: env.POSTGRES_PASSWORD,
+    ssl: env.POSTGRES_SSL === "true" ? { rejectUnauthorized: false } : false,
   },
 });
