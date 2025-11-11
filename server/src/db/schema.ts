@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, integer, timestamp, text, pgEnum, uuid } from "drizzle-orm/pg-core";
+import { pgTable, serial, varchar, integer, timestamp, text, pgEnum, uuid, bigint } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 // Example entity: Items
@@ -33,6 +33,8 @@ export const documents = pgTable("documents", {
 export const markKindEnum = pgEnum("mark_kind", ["url", "note", "upload", "virtual"]);
 export const markStatusEnum = pgEnum("mark_status", ["pending", "processing", "success", "failed"]);
 export const captureRoleEnum = pgEnum("capture_role", ["primary", "image", "video", "meta", "auxiliary"]);
+export const accessStatusEnum = pgEnum("access_status", ["pending", "success", "failed", "incomplete"]);
+export const captureStatusEnum = pgEnum("capture_status", ["pending", "success", "failed", "incomplete"]);
 
 // Tables
 export const users = pgTable("users", {
@@ -74,11 +76,12 @@ export const accesses = pgTable("accesses", {
     .notNull()
     .references(() => marks.id, { onDelete: "cascade" }),
 
+  status: accessStatusEnum().notNull().default("pending"),
   accessedAt: timestamp({ withTimezone: true }).defaultNow(),
   statusCode: integer(),
   mimeType: text(),
   etag: text(),
-  contentLength: integer(),
+  contentLength: bigint({ mode: "number" }),
   headers: text(),
   error: text(),
 });
@@ -91,9 +94,10 @@ export const captures = pgTable("captures", {
 
   order: integer().notNull().default(0),
   role: captureRoleEnum().notNull(),
+  status: captureStatusEnum().notNull().default("pending"),
   mimeType: text(),
   storageKey: text().notNull(),
-  bytesSize: integer(),
+  bytesSize: bigint({ mode: "number" }),
   checksum: text(),
 
   createdAt: timestamp({ withTimezone: true }).defaultNow(),

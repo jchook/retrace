@@ -13,11 +13,10 @@ services:
     init: true
     depends_on:
       - db
+      - redis
     restart: unless-stopped
     volumes:
-      - ./server/storage/documents:/mnt/documents:rw
-      - ./server/storage/artifacts:/mnt/artifacts:rw
-
+      - ./server/storage:/mnt/storage:rw
 
   db:
     image: 'postgres:17-alpine'
@@ -64,6 +63,23 @@ services:
     image: 'redis:7-alpine'
     restart: unless-stopped
 
+  worker:
+    build:
+      context: .
+      target: server
+    command: ["worker"]
+    env_file:
+      - ".env.defaults"
+      - ".env"
+    init: true
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+    volumes:
+      - ./server/storage:/mnt/storage:rw
 
 volumes:
   pg_data:

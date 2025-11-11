@@ -19,22 +19,27 @@ debug() {
 debug "index"
 api GET /
 
-debug "create item"
-api POST /items \
+debug "create user"
+api POST /users \
   -H "Content-Type: application/json" \
   -d '{
-    "title": "Test Item",
-    "description": "This is a test."
+    "name": "Test User",
+    "email": "test@example.com"
   }'
-ITEM_ID=$(echo "$DATA" | jq -r '.id')
+USER_ID=$(echo "$DATA" | jq -r '.id')
 
-debug "list items"
-api GET /items
+debug "create mark"
+api POST /marks \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": '"\"$USER_ID\""',
+    "url": "https://example.com",
+    "tags": ["example"]
+  }'
+MARK_ID=$(echo "$DATA" | jq -r '.id')
 
-debug "upload file to item"
-api POST "/documents?itemId=$ITEM_ID" \
-  -H "Content-Type: multipart/form-data" \
-  -F "file=@spec/openapi.json"
+debug "list marks"
+api GET /marks
 
-debug "list item documents"
-api GET "/items/$ITEM_ID/documents"
+debug "get mark details"
+api GET "/marks/$MARK_ID"

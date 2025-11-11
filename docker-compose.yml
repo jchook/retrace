@@ -15,11 +15,10 @@ services:
     init: true
     depends_on:
       - db
+      - redis
     volumes:
       - '.:/app'
-      - ./server/storage/documents:/mnt/documents:rw
-      - ./server/storage/artifacts:/mnt/artifacts:rw
-
+      - ./server/storage:/mnt/storage:rw
 
   db:
     image: 'postgres:17-alpine'
@@ -60,7 +59,6 @@ services:
   redis:
     image: 'redis:7-alpine'
 
-
   client:
     build:
       context: .
@@ -77,6 +75,26 @@ services:
       - '.:/app'
     depends_on:
       - api
+
+  worker:
+    build:
+      context: .
+      target: app
+    command: "worker"
+    entrypoint: "/app/server/bin/docker-entrypoint.sh"
+    working_dir: "/app/server"
+    env_file:
+      - ".env.defaults"
+      - ".env"
+    init: true
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - '.:/app'
+      - ./server/storage:/mnt/storage:rw
 
 volumes:
   pg_data:

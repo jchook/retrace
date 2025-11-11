@@ -102,14 +102,33 @@ export function withV1(app: App) {
       const [created] = await db.insert(marks).values(req.body).returning();
       // Fire-and-forget queue job for ingestion (optional in dev)
       try {
-        await markIngestionQueue.add("ingest", {
-          markId: created.id,
-          url: created.url,
-        });
+        await markIngestionQueue.add("ingest", { markId: created.id });
       } catch (err) {
         req.log.warn({ err }, "Failed to enqueue mark ingestion job");
       }
       return res.status(201).send(created);
+    },
+  });
+
+  // Trigger re-capture/ingestion for existing mark (creates a new access)
+  app.route({
+    method: "POST",
+    url: "/marks/:id/ingest",
+    schema: {
+      description: "Queue ingestion to create a new access",
+      tags: ["Marks", "Accesses"],
+      params: z.object({ id: UuidParam }),
+      response: { 202: z.object({ ok: z.boolean() }), 404: ErrorResponse },
+    },
+    handler: async (req, res) => {
+      const mark = await db.query.marks.findFirst({ where: eq(marks.id, req.params.id) });
+      if (!mark) return res.status(404).send({ error: "Mark not found" });
+      try {
+        await markIngestionQueue.add("ingest", { markId: mark.id });
+      } catch (err) {
+        req.log.warn({ err }, "Failed to enqueue mark ingestion job");
+      }
+      return res.status(202).send({ ok: true });
     },
   });
 

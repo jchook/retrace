@@ -86,6 +86,7 @@ export const Capture = createSelectSchema(captures).openapi({
     accessId: "018f0000-aaaa-bbbb-cccc-000000000000",
     order: 0,
     role: "primary",
+    status: "success",
     mimeType: "text/html",
     storageKey: "marks/018f.../018f.../capture_0.html",
     bytesSize: "20480",
@@ -99,6 +100,7 @@ export const Access = createSelectSchema(accesses).openapi({
   example: {
     id: "018f0000-aaaa-bbbb-cccc-000000000000",
     markId: "018f0000-aaaa-bbbb-cccc-111111111111",
+    status: "success",
     accessedAt: ExampleDate,
     statusCode: 200,
     mimeType: "text/html",
