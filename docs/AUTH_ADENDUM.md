@@ -1,7 +1,3 @@
-Perfect — updated to the unified token model per the addendum.
-
----
-
 # 🧭 **Retrace Authentication – Unified Token PRD (MVP)**
 
 ## 1. Purpose
@@ -37,7 +33,7 @@ Provide a **minimal, password-less authentication system** for Retrace that supp
 
   1. Create or find user.
   2. Generate 6-digit code.
-  3. Hash code → insert into `auth_tokens` with `kind='login'` and `expiresAt = now() + 10 min`.
+  3. Hash code → insert into `auth_tokens` with `kind='otp'` and `expiresAt = now() + 10 min`.
   4. Send email.
 
 **Verify OTP**
@@ -47,7 +43,7 @@ Provide a **minimal, password-less authentication system** for Retrace that supp
 * Steps:
 
   1. Hash provided code.
-  2. Look up active `auth_tokens` where `kind='login'`, `expiresAt > now()`.
+  2. Look up active `auth_tokens` where `kind='otp'`, `expiresAt > now()`.
   3. On success: delete that row (`DELETE FROM auth_tokens WHERE id=?`).
   4. Create a short-lived session or issue an API token.
 
@@ -166,7 +162,7 @@ OTPs are deleted immediately on use; this job removes expired or revoked tokens.
 
 ---
 
-**Summary:**
+*Summary:**
 Retrace Auth MVP uses a **single `auth_tokens` table** keyed by `kind`, unifying OTP and API tokens under one schema.
 OTPs are deleted on use, tokens are hashed, and cleanup is trivial.
-Simple, secure, and aligned with the small‑data, local‑first Retrace philosophy.
+Simple, secure, and perfectly aligned with the small-data, local-first Retrace philosophy.
