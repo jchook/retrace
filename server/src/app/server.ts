@@ -50,6 +50,7 @@ await fastify.register(import("@fastify/swagger"), {
     ],
     tags: [
       { name: "Meta", description: "Meta information" },
+      { name: "Auth", description: "OTP sessions and API tokens" },
       { name: "Users", description: "User concept (no auth)" },
       { name: "Items", description: "Example CRUD entity" },
       { name: "Documents", description: "Binary upload/download" },
@@ -59,10 +60,10 @@ await fastify.register(import("@fastify/swagger"), {
     ],
     components: {
       securitySchemes: {
-        apiKey: {
-          type: "apiKey",
-          name: "apiKey",
-          in: "header",
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "token",
         },
       },
     },

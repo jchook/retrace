@@ -1,7 +1,7 @@
 import { Readable } from "node:stream";
 import { z } from "zod";
 import { createSchemaFactory, createSelectSchema } from "drizzle-zod";
-import { documents, items, marks, accesses, captures, users } from "../db/schema";
+import { documents, items, marks, accesses, captures, users, authTokens } from "../db/schema";
 
 const { createInsertSchema } = createSchemaFactory({
   coerce: { date: true },
@@ -70,6 +70,7 @@ export const Document = createSelectSchema(documents)
   });
 
 export const ErrorResponse = z.object({ error: z.string() });
+export const OkResponse = z.object({ ok: z.boolean() }).openapi({ ref: "OkResponse" });
 
 // ────────────────────────────────────────────────────────────────
 // Retrace PRD route schemas — derived from Drizzle tables
@@ -89,7 +90,7 @@ export const Capture = createSelectSchema(captures).openapi({
     status: "success",
     mimeType: "text/html",
     storageKey: "marks/018f.../018f.../capture_0.html",
-    bytesSize: "20480",
+    bytesSize: 20480,
     checksum: "sha256:deadbeef",
     createdAt: ExampleDate,
   },
@@ -105,7 +106,7 @@ export const Access = createSelectSchema(accesses).openapi({
     statusCode: 200,
     mimeType: "text/html",
     etag: "\"1234abcd\"",
-    contentLength: "20480",
+    contentLength: 20480,
     headers: "{\"content-type\":\"text/html\"}",
     error: null,
   },
@@ -167,3 +168,58 @@ export const MarkWithAccesses = Mark.extend({ accesses: z.array(Access) }).opena
 export const MarkWithAccessesAndCaptures = Mark.extend({
   accesses: z.array(AccessWithCaptures),
 }).openapi({ ref: "MarkWithAccessesAndCaptures" });
+
+// Auth schemas — derived from auth_tokens table
+export const ApiToken = createSelectSchema(authTokens)
+  .omit({ tokenHash: true })
+  .extend({ kind: z.literal("api") })
+  .openapi({
+    ref: "ApiToken",
+    example: {
+      id: "018f0000-aaaa-bbbb-cccc-444444444444",
+      userId: "018f0000-aaaa-bbbb-cccc-333333333333",
+      kind: "api",
+      name: "Browser Extension",
+      scope: null,
+      expiresAt: ExampleDate,
+      lastUsedAt: ExampleDate,
+      revoked: false,
+      revokedAt: null,
+      createdAt: ExampleDate,
+    },
+  });
+
+export const AuthEmailOtpRequest = z
+  .object({
+    email: z.string().email(),
+  })
+  .openapi({ ref: "AuthEmailOtpRequest" });
+
+export const AuthVerifyOtpRequest = z
+  .object({
+    email: z.string().email(),
+    code: z.string().regex(/^\d{6}$/),
+  })
+  .openapi({ ref: "AuthVerifyOtpRequest" });
+
+export const AuthSession = z
+  .object({
+    token: z.string().describe("Bearer token"),
+    user: User,
+  })
+  .openapi({ ref: "AuthSession" });
+
+export const AuthOkResponse = z.object({ ok: z.boolean() }).openapi({ ref: "AuthOkResponse" });
+
+export const AuthApiTokenCreateRequest = z
+  .object({
+    name: z.string().trim().min(1).max(128).optional(),
+  })
+  .openapi({ ref: "AuthApiTokenCreateRequest" });
+
+export const AuthApiTokenCreateResponse = z
+  .object({
+    token: z.string(),
+    apiToken: ApiToken,
+  })
+  .openapi({ ref: "AuthApiTokenCreateResponse" });
