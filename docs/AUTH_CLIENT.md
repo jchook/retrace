@@ -44,10 +44,10 @@ The auth window shall display all errors emitted from `/auth/*` endpoints define
    * User submits email.
    * Invoke `useMutation(api.auth.requestOtp)` from Kubb SDK.
    * Show confirmation or server error in a Mantine `Alert`.
-3. **Step 2 – Verify OTP**
+3. **Step 2 – Login**
 
-   * User enters 6-digit code.
-   * Invoke `useMutation(api.auth.verifyOtp)`.
+   * User enters the 6-digit code delivered via email.
+   * Invoke `useMutation(api.auth.login)` (renamed from `verifyOtp`).
    * On success: backend returns `{ token }`.
    * Store token in `localStorage['retrace_token']`.
    * Set Axios Authorization header (`Bearer <token>`).
@@ -56,7 +56,32 @@ The auth window shall display all errors emitted from `/auth/*` endpoints define
 ### 2️⃣ Authorized Requests
 
 * All Kubb-generated React Query hooks share the configured Axios client in `src/api/client.ts`.
-* The client injects the token header automatically if present.
+* `kubb.config.ts` will point `pluginClient({ importPath: '../api/client.ts' })` at this file (per Kubb custom-client guidance) so every generated hook calls the same wrapper.
+* `client.ts` exports both the raw `axiosInstance` (with `baseURL: '/v1'`) and the `client` function signature expected by the SDK.
+* A request interceptor reads the latest token from `authStore` (sourced from `localStorage['retrace_token']`). When a token exists, the interceptor mutates `config.headers.Authorization = 'Bearer ' + token` before dispatch.
+* Hooks never pass tokens manually—React Query mutations/queries simply call their generated functions and receive the header automatically.
+
+```ts
+// client/src/api/client.ts
+import axios from 'axios'
+
+export const axiosInstance = axios.create({ baseURL: '/v1' })
+
+axiosInstance.interceptors.request.use(config => {
+  const token = authStore.getToken()
+  if (token) {
+    config.headers = config.headers ?? {}
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
+export const client = async <TData, TError = unknown, TVariables = unknown>(
+  config: RequestConfig<TVariables>,
+): Promise<ResponseConfig<TData>> => {
+  return axiosInstance.request<TVariables, ResponseConfig<TData>>(config)
+}
+```
 
 ### 3️⃣ Global 401 Interceptor
 
@@ -115,9 +140,12 @@ src/routes/
 
 * All request/response types originate from server OpenAPI via Kubb.
 * Do not hardcode URLs or shapes.
-* `src/api/client.ts` owns Axios baseURL (`/v1`) and interceptors.
-* Token persistence: `localStorage` only (no cookies).
-* Token header injection occurs automatically via Axios instance.
+* `src/api/client.ts` owns Axios baseURL (`/v1`), the Bearer injection interceptor, and the global 401 handler—this mirrors the Kubb knowledge-base pattern for supplying a custom Axios client.
+* Regeneration contract:
+  1. Ensure `client.ts` exports `client<Request, Error, Variables>(config)` so generated files can `import client from '../api/client.ts'`.
+  2. `kubb.config.ts` stays committed with the `importPath` pointing at `client.ts`; `just gen` reuses it with no manual edits.
+* Token persistence: `localStorage` only (no cookies). `authStore` exposes `getToken()` so the interceptor has a single accessor.
+* Token header injection occurs automatically inside the Axios request interceptor before every call.
 * When 401 is received, purge local token and route to `/auth`.
 
 ---
@@ -176,4 +204,3 @@ just client bun dev
 **End of Transmission**
 (high-beep) AUTH ROUTE IMPLEMENTATION PROTOCOL ready for deployment.
 Awaiting further directives from **HIGH GALACTIC COMMAND**.
-

@@ -1,11 +1,12 @@
 import { App } from "../app";
 import { withAuth } from "./withAuth";
-import { withDemo } from "./withDemo";
+import { withV1 as withV1Handlers } from "./withV1";
 
-export { withAuth } from "./withAuth";
-export { withDemo } from "./withDemo";
-
-export function withV1(app: App) {
+export function withV1Auth(app: App) {
   withAuth(app);
-  withDemo(app);
+}
+
+export function withV1Routes(app: App) {
+  withV1Auth(app);
+  withV1Handlers(app);
 }

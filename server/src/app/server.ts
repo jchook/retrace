@@ -10,7 +10,7 @@ import {
 } from "fastify-zod-openapi";
 import fastifyMultipart from "@fastify/multipart";
 import { config } from "./config";
-import { withV1 } from "../routes";
+import { withV1Routes } from "../routes";
 
 const fastify = Fastify({
   logger: true,
@@ -92,5 +92,5 @@ await app.register(import("@fastify/swagger-ui"), {
   transformSpecificationClone: true,
 });
 
-withV1(app);
+withV1Routes(app);
 export type App = typeof app;
