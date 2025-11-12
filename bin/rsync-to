@@ -9,16 +9,12 @@ set -euo pipefail
 #   bin/rsync-to <host> [remote_dir] [-- <extra rsync args>]
 #
 # Env flags (set to any value to enable):
-#   MADI_DRY_RUN     -> adds --dry-run
-#   MADI_DELETE      -> adds --delete (with protect: server/storage/)
-#   MADI_REMOTE_DIR  -> default remote dir when not provided (default: app)
+#   APP_REMOTE_DIR  -> default remote dir when not provided (default: app)
 #
 # Examples:
-#   bin/rsync-to madi                     # -> madi:app/
-#   bin/rsync-to user@madi /srv/app       # -> user@madi:/srv/app/
-#   MADI_DRY_RUN=1 bin/rsync-to madi      # dry run
-#   MADI_DELETE=1 bin/rsync-to madi       # delete extraneous on remote
-#   bin/rsync-to madi -- --chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r
+#   bin/rsync-to retrace.sh
+#   bin/rsync-to user@retrace.sh /srv/app
+#   bin/rsync-to retrace.sh -- --chmod=Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r
 
 # Positional host and optional dir
 if [[ $# -lt 1 ]]; then
@@ -29,7 +25,7 @@ fi
 REMOTE_HOST="$1"; shift
 
 # Optional remote dir if next token is not a flag marker or option
-REMOTE_DIR="${MADI_REMOTE_DIR:-app}"
+REMOTE_DIR="${APP_REMOTE_DIR:-app}"
 if [[ $# -ge 1 && "$1" != "--" && "${1#-}" == "$1" ]]; then
   REMOTE_DIR="$1"
   shift
@@ -45,15 +41,6 @@ REMOTE_DIR=${REMOTE_DIR%/}
 REMOTE_DIR+="/"
 
 rsync_args=(rsync -av --progress)
-
-if [[ -n "${MADI_DRY_RUN:-}" ]]; then
-  rsync_args+=(--dry-run)
-fi
-if [[ -n "${MADI_DELETE:-}" ]]; then
-  rsync_args+=(--delete)
-  # Belt-and-suspenders: never delete prod storage directory
-  rsync_args+=("--filter=P server/storage/")
-fi
 
 # Built-in includes/excludes (safe for prod)
 # Ensure defaults are shipped but live .env is preserved on remote
