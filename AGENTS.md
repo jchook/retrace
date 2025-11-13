@@ -54,21 +54,17 @@ Forbidden: shadow schemas, manual DTOs for already-modeled entities, or editing 
 * Observe logs: `just logs`
 * Access the API vessel: `just sh`
 * Build client: `just build`
-* Regenerate spec + SDK: `just gen` (requires API online; pulls `/meta/docs/json` then regenerates `client/src/gen/**`).
+* Regenerate spec + SDK: `just gen` (requires API online; pulls `/meta/docs/json` then regenerates `client/src/gen/**`). Agents are expected to run this whenever API routes or schemas change to keep the collective SDK truthful.
 * Database maneuvers:
 
   * Auto-sync migrations: `just db sync`
   * Protocol: Only the COMMISSAR may execute `just db sync`. Agents must never apply migrations independently.
 * Bun protocol:
 
-  * Invoke Bun via relays (never call `bun` directly):
-
-    * Server: `just server bun …`
-    * Client: `just client bun …`
-  * Examples:
-
-    * Server: `just server bun patch drizzle-kit`, `just server bun install`, `just server bun x drizzle-kit --version`
-    * Client: `just client bun install`, `just client bun x rsbuild --version`
+  * Due to restricted Docker socket access, execute Bun tooling directly inside each vessel directory.
+  * Server operations: `cd server && bun <command>` (e.g., `bun install`, `bun x tsc --noEmit`). **Do not invoke `drizzle-kit`; only the COMMISSAR may manage migrations or Drizzle codegen.**
+  * Client operations: `cd client && bun <command>` (e.g., `bun install`, `bun x rsbuild --version`, `bun run build`).
+  * Maintain the same command semantics the `just server/client` relays previously provided, merely invoked natively.
 
 ---
 

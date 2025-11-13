@@ -1,11 +1,20 @@
 import fs from "fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "@rsbuild/core";
 import { pluginReact } from "@rsbuild/plugin-react";
 import { TanStackRouterRspack } from "@tanstack/router-plugin/rspack";
 
 const isDocker = fs.existsSync("/.dockerenv");
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const clientSrcDir = path.resolve(__dirname, "src");
 
 export default defineConfig({
+  source: {
+    alias: {
+      src: clientSrcDir,
+    },
+  },
   plugins: [pluginReact()],
   html: {
     title: "App",

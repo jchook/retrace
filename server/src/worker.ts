@@ -45,7 +45,7 @@ async function processJob(job: { data: MarkIngestionJob }) {
     const headers = headersToJson(resp.headers);
     const arrayBuf = await resp.arrayBuffer();
     const buf = Buffer.from(arrayBuf);
-    const contentLength = BigInt(buf.length);
+    const contentLength = buf.length;
 
     // Update access with response details and success
     await db
@@ -72,7 +72,7 @@ async function processJob(job: { data: MarkIngestionJob }) {
         status: "success",
         mimeType,
         storageKey: path.join(relDir, fileName),
-        bytesSize: BigInt(buf.length),
+        bytesSize: buf.length,
       })
       .returning();
 

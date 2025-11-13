@@ -8,6 +8,7 @@ const MB = 1024 * 1024;
 export const ConfigSchema = z.object({
   name: z.string().default("retrace.sh"),
   storage: z.string().default("/mnt/storage"),
+  artifactStore: z.string().default("/mnt/artifacts"),
   uploadFileSizeLimit: z.coerce
     .number()
     .min(1 * MB, {

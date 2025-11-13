@@ -13,6 +13,9 @@ client *args="zsh":
 server *args="zsh":
   docker compose exec api "$@"
 
+tsc:
+  cd server && bun x tsc && cd ../client && bun x tsc
+
 root *args="ash":
   docker compose exec -u root api "$@"
 

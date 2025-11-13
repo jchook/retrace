@@ -22,7 +22,7 @@ import { enqueueMarkIngestion } from "../utils/queue";
 import { saveDocumentFile } from "../utils/documents";
 import { requireAuth } from "../middleware/auth";
 
-export const v1App: AppPlugin = async (app: App) => {
+export async function v1App(app: App) {
   app.addHook("preHandler", requireAuth);
 
   // Users (concept only; still require authenticated caller)

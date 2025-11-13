@@ -96,6 +96,3 @@ await app.register(v1, { prefix: "/v1" });
 
 export type App = typeof app;
 
-export type AppPlugin<Options extends FastifyPluginOptions = {}> =
-  FastifyPluginAsync<Options, App["rawServer"], App["typeProvider"], App["log"]>;
-

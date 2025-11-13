@@ -6,10 +6,14 @@
     "noEmit": true,
     "outDir": "dist",
     "rootDir": "src",
+    "baseUrl": ".",
+    "paths": {
+      "src/*": ["./src/*"]
+    },
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true
   },
+  "include": ["src", "src/types/fastify.d.ts"],
   "exclude": ["drizzle.config.ts"]
 }
-

@@ -5,6 +5,7 @@
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
     "module": "ESNext",
     "jsx": "react-jsx",
+    "baseUrl": ".",
     "strict": true,
     "skipLibCheck": true,
     "isolatedModules": true,
