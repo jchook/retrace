@@ -1,5 +1,5 @@
 import "zod-openapi/extend";
-import Fastify from "fastify";
+import Fastify, { FastifyPluginAsync, FastifyPluginOptions } from "fastify";
 import {
   type FastifyZodOpenApiTypeProvider,
   fastifyZodOpenApiPlugin,
@@ -10,7 +10,7 @@ import {
 } from "fastify-zod-openapi";
 import fastifyMultipart from "@fastify/multipart";
 import { config } from "./config";
-import { withV1Routes } from "../routes";
+import { v1 } from "../routes";
 
 const fastify = Fastify({
   logger: true,
@@ -92,5 +92,10 @@ await app.register(import("@fastify/swagger-ui"), {
   transformSpecificationClone: true,
 });
 
-withV1Routes(app);
+await app.register(v1, { prefix: "/v1" });
+
 export type App = typeof app;
+
+export type AppPlugin<Options extends FastifyPluginOptions = {}> =
+  FastifyPluginAsync<Options, App["rawServer"], App["typeProvider"], App["log"]>;
+

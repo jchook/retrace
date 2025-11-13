@@ -18,6 +18,12 @@ export const ConfigSchema = z.object({
     })
     .default(50 * MB),
   version: z.string().default(""),
+  smtpHost: z.string().default(""),
+  smtpPort: z.coerce.number().default(587),
+  smtpUser: z.string().default(""),
+  smtpPass: z.string().default(""),
+  smtpFrom: z.string().default(""),
+  smtpDevInbox: z.string().default(""),
 });
 
 export const config = loadConfigFromEnv(ConfigSchema, "APP_");

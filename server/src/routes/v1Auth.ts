@@ -57,7 +57,7 @@ async function findOrCreateUserByEmail(email: string): Promise<UserRow> {
   return created;
 }
 
-export function withAuth(app: App) {
+export async function v1Auth(app: App) {
   app.route({
     method: "POST",
     url: "/auth/email-otp",
@@ -65,9 +65,9 @@ export function withAuth(app: App) {
       description: "Request a login OTP",
       tags: ["Auth"],
       body: AuthEmailOtpRequest,
-      response: { 200: AuthOkResponse },
+      response: { 200: AuthOkResponse, 500: ErrorResponse },
     },
-    handler: async (req) => {
+    handler: async (req, res) => {
       const user = await findOrCreateUserByEmail(req.body.email);
 
       await db
@@ -82,8 +82,14 @@ export function withAuth(app: App) {
         expiresAt: minutesFromNow(OTP_EXPIRATION_MINUTES),
       });
 
-      req.log.info({ userId: user.id, email: user.email }, "OTP requested");
-      req.log.debug({ email: user.email, code }, "OTP issued");
+      try {
+        await req.server.mailer.sendOtpEmail({ to: user.email, code });
+      } catch (err) {
+        req.log.error({ err, email: user.email }, "Failed to dispatch OTP email");
+        return res.status(500).send({ error: "Unable to send verification code" });
+      }
+
+      req.log.info({ userId: user.id, email: user.email }, "OTP dispatched");
       return { ok: true };
     },
   });
