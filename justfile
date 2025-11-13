@@ -7,16 +7,20 @@ list:
 build:
   cd client && bun run build
 
-# ---
+# Generate OpenAPI spec and SDK
+gen:
+  cd server && just gen && cd ../client && just gen
 
-db *args="--help":
-  docker compose exec api bun drizzle-kit "$@"
+# ---
 
 client *args="zsh":
   docker compose exec client "$@"
 
 server *args="zsh":
   docker compose exec api "$@"
+
+db *args="--help":
+  docker compose exec api bun drizzle-kit "$@"
 
 logs:
   docker compose logs -f
@@ -34,11 +38,6 @@ up *args="--menu":
   HOST_UID=$(id -u) HOST_GID=$(id -g) docker compose up --build --wait "$@"
 
 # ---
-
-# Generate OpenAPI spec and other code
-gen:
-  cd server && just gen && cd ../client && just gen
-
 
 rsync:
   rsync -av --delete \
