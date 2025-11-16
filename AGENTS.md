@@ -84,6 +84,7 @@ Forbidden: shadow schemas, manual DTOs for already-modeled entities, or editing 
 * Client routes live in `client/src/routes/` (file-based). Example: `items_.$itemId.tsx`.
 * Generated artifacts (`client/src/gen/**`, `client/src/routeTree.gen.ts`) are community-maintained via automation; do not modify by hand.
 * Indices in Drizzle: return an array from the table callback (e.g., `[index('name_idx').on(t.name)]`).
+* Type integrity is sacred: avoid `any` (especially `as any`) unless expressly ordered by the COMMISSAR. Prefer `satisfies` or precise generics over assertion-based escapes.
 
 ---
 
@@ -106,7 +107,7 @@ Forbidden: shadow schemas, manual DTOs for already-modeled entities, or editing 
 
 * Communicate succinctly. Group actions logically. Announce before executing tools.
 * Preserve stylistic harmony and document revisions when collective processes change.
-* After schema/route updates: notify the COMMISSAR to execute `just db sync` (authority only) and `just gen`.
+* After any schema/relations change: explicitly instruct the COMMISSAR to run `just db push` (or `just db sync`, per fleet) so Postgres reflects the new Drizzle models, then follow up with `just gen` to refresh OpenAPI + SDK outputs.
 
 ---
 

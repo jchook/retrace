@@ -2,7 +2,6 @@ lsd
 apk add lsd
 d
 g
-ls
 ls --color
 apk add rlwrap
 bun repl
@@ -16,3 +15,8 @@ ip --help
 man ip
 git status
 apk search nerdfont
+bun drizzle
+bun drizzle-kit
+bun drizzle-kit push
+ls
+ls -lh

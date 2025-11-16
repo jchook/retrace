@@ -7,6 +7,9 @@ list:
 build:
   cd client && bun run build
 
+test-integration:
+  cd server && bun x vitest run src/tests/integration --pool=threads
+
 # Generate OpenAPI spec and SDK
 gen:
   cd server && just gen && cd ../client && just gen
@@ -22,8 +25,8 @@ server *args="zsh":
 db *args="--help":
   docker compose exec api bun drizzle-kit "$@"
 
-logs:
-  docker compose logs -f
+logs *args="-f":
+  docker compose logs "$@"
 
 prod *args="up":
   docker compose -f docker-compose.prod.yml "$@"

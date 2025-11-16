@@ -40,7 +40,7 @@ export default defineConfig({
       "/v1": {
         target: isDocker ? "http://api:3000" : "http://localhost:3000",
         changeOrigin: true,
-        pathRewrite: { "^/v1": "" },
+        // pathRewrite: { "^/v1": "" },
       },
     },
   },

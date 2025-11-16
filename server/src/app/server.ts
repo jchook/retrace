@@ -11,6 +11,7 @@ import {
 import fastifyMultipart from "@fastify/multipart";
 import { config } from "./config";
 import { v1 } from "../routes";
+import { createMailer } from "../lib/mailer";
 
 const fastify = Fastify({
   logger: true,
@@ -21,11 +22,30 @@ fastify.setSerializerCompiler(serializerCompiler);
 
 export const app = fastify.withTypeProvider<FastifyZodOpenApiTypeProvider>();
 
+const mailer = createMailer(
+  {
+    host: config.smtpHost || undefined,
+    port: config.smtpPort,
+    user: config.smtpUser || undefined,
+    pass: config.smtpPass || undefined,
+    from: config.smtpFrom || undefined,
+    devInbox: config.smtpDevInbox || undefined,
+  },
+  fastify.log,
+);
+
+fastify.decorate("mailer", mailer);
+
 // Register multipart support for file uploads
 app.register(fastifyMultipart, {
   limits: {
     fileSize: config.uploadFileSizeLimit,
   },
+});
+
+// Allow requests without an explicit content-type (e.g., DELETE with no body)
+app.addContentTypeParser("*", { parseAs: "buffer" }, (_req, payload, done) => {
+  done(null, payload);
 });
 
 await fastify.register(fastifyZodOpenApiPlugin);
@@ -95,4 +115,3 @@ await app.register(import("@fastify/swagger-ui"), {
 await app.register(v1, { prefix: "/v1" });
 
 export type App = typeof app;
-

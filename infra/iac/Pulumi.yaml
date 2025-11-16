@@ -1,0 +1,10 @@
+name: madi
+description: Madison AI
+runtime:
+  name: nodejs
+  options:
+    packagemanager: pnpm
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: https://www.pulumi.com/ai/api/project/3f7ca01b-19d2-4ec6-86bf-aebebef4ebd4.zip
